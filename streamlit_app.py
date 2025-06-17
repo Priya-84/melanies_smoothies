@@ -38,7 +38,7 @@ my_insert_stmt = """ INSERT INTO smoothies.public.orders (ingredients, NAME_ON_O
 st.write(my_insert_stmt)
 
 time_to_insert = st.button('Submit Order')
-
+File "/mount/src/melanies_smoothies/streamlit_app.py"
 if time_to_insert:
     session.sql(my_insert_stmt).collect()
     st.success('Your Smoothie is ordered,Vaanya!', icon="✅")
