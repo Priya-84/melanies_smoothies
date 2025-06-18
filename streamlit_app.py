@@ -14,39 +14,32 @@ st.write('The Name on your Smoothie will be', NAME_ON_ORDER)
 
 cnx = st.connection("snowflake")
 session = cnx.session()
+my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'),col('SEARCH_ON'))
+st.dataframe(data=my_dataframe, use_container_width=True)
+st.stop()
 
-# ✅ Get required columns from table
-my_dataframe = session.table("smoothies.public.fruit_options").select(
-    col('FRUIT_NAME'), 
-    col('FRUIT_ID'), 
-    col('FAMILY'), 
-    col('FRUIT_ORDER')
-)
+ingredients_list= st.multiselect(
+    'Choose up to 5 ingredients:'
+    ,my_dataframe
+    ,max_selections=5
+    )
 
-# ✅ Convert Snowpark DataFrame to Pandas and rename columns to match JSON keys
-df = my_dataframe.to_pandas()
-df = df.rename(columns={
-    'FRUIT_NAME': 'name',
-    'FRUIT_ID': 'id',
-    'FAMILY': 'family',
-    'FRUIT_ORDER': 'order'
-})
-
-# ✅ Show original table if needed
-st.dataframe(df)
-
-# ✅ Multiselect with list of dicts
-ingredients_list = st.multiselect(
-    'Choose up to 5 ingredients:',
-    df.to_dict('records'),  # 👈 returns list of JSON-like dicts
-    max_selections=5,
-    format_func=lambda fruit: fruit["name"]  # 👈 show fruit names in dropdown
-)
-
-# ✅ Process selected ingredients
 if ingredients_list:
     ingredients_string = ''
     for fruit_chosen in ingredients_list:
-        ingredients_string += fruit_chosen['name'] + ' '
-        st.subheader(fruit_chosen['name'] + ' Nutrition Information')
-        st.json(fruit_chosen)  # 👈 this matches your screenshot (blue box)
+        ingredients_string += fruit_chosen + ' '
+        st.subheader(fruit_chosen + ' Nutrition Information')
+        smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/watermelon")
+        sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
+
+#st.write("ingredients_string")
+            
+my_insert_stmt = """ INSERT INTO smoothies.public.orders (ingredients, NAME_ON_ORDER)
+               VALUES ('""" + ingredients_string + """','""" + NAME_ON_ORDER + """')"""
+ 
+st.write(my_insert_stmt)
+
+time_to_insert = st.button('Submit Order')
+if time_to_insert:
+    session.sql(my_insert_stmt).collect()
+    st.success('Your Smoothie is ordered,Vaanya!', icon="✅")
